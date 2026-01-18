@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Postpartum Workout Generator</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    import { useState, useEffect } from 'react';
+import { Dumbbell, RefreshCw, Clock, Heart, HelpCircle, X, Globe, Play, Pause, RotateCcw } from 'lucide-react';
+
+export default function PostpartumWorkout() {
+  const [currentWorkout, setCurrentWorkout] = useState(null);
+  const [language, setLanguage] = useState('en');
+  const [showExerciseHelp, setShowExerciseHelp] = useState(null);
+  const [showTypeHelp, setShowTypeHelp] = useState(false);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerPaused, setTimerPaused] = useState(false);
+  const [timerCompleted, setTimerCompleted] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [tabataPhase, setTabataPhase] = useState('work');
+  const [tabataRound, setTabataRound] = useState(1);
+
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.includes('/pt')) {
+      setLanguage('pt');
+    } else {
+      setLanguage('en');
+    }
+  }, []);
+
+  useEffect(() => {
+    let interval;
+    if (timerRunning && timeRemaining > 0) {
+      interval = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            if (currentWorkout?.type === 'Tabata') {
+              if (tabataPhase === 'work' && tabataRound < 8) {
+                setTabataPhase('rest');
+                return 10;
+              } else if (tabataPhase === 'rest' && tabataRound < 8) {
+                setTabataPhase('work');
+                setTabataRound(r => r + 1);
+                return 20;
+              } else if (tabataRound === 8) {
+                const tabataCount = currentWorkout.tabataCount || 1;
+                const totalRounds = tabataCount * 8;
+                const currentTotalRound = Math.floor((tabataRound - 1) / 8) * 8 + tabataRound;
+                
+                if (currentTotalRound < totalRounds) {
+                  setTabataPhase('work');
+                  setTabataRound(1);
+                  return 20;
+                } else {
+                  setTimerRunning(false);
+                  setTimerCompleted(true);
+                  return 0;
+                }
+              } else {
+                setTimerRunning(false);
+                setTimerCompleted(true);
+                return 0;
+              }
+            } else {
+              setTimerRunning(false);
+              setTimerCompleted(true);
+              return 0;
+            }
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timerRunning, timeRemaining, currentWorkout, tabataPhase, tabataRound]);
+
+  const translations = {
+    en: {
+      title: "Postpartum Workout",
+      subtitle: "Safe, gentle exercises designed for postnatal recovery",
+      generate: "Generate Workout",
+      another: "Get Another Workout",
+      disclaimer: "Important:",
+      disclaimerText: "Always consult with your healthcare provider before starting any postpartum exercise program. Listen to your body and stop if you experience pain or discomfort.",
+      clickForWorkout: "Click below to get your personalized workout routine",
+      start: "Start Timer",
+      resume: "Resume",
+      pause: "Pause",
+      reset: "Reset",
+      go: "GO",
+      rest: "REST",
+      round: "Round",
+      wellDone: "Well Done!",
+      congratulations: "Amazing work! You completed the workout!",
+      tryAgain: "Do It Again",
+      workoutTypes: {
+        AMRAP: "As Many Rounds As Possible - Complete the circuit as many times as you can in the given time",
+        EMOM: "Every Minute On the Minute - Start each exercise at the beginning of each minute",
+        Tabata: "20 seconds work / 10 seconds rest - High intensity intervals for 8 rounds",
+        ForTime: "Complete as fast as possible - Finish all exercises and rounds in the shortest time",
+        Rounds: "Complete all rounds with specified reps - Work through each round with the given repetitions",
+        Intervals: "Work and rest for specified time periods - Alternate between work and rest intervals"
+      }
+    },
+    pt: {
+      title: "Treino Pós-Parto",
+      subtitle: "Exercícios seguros e suaves para recuperação pós-natal",
+      generate: "Gerar Treino",
+      another: "Obter Outro Treino",
+      disclaimer: "Importante:",
+      disclaimerText: "Consulte sempre o seu profissional de saúde antes de iniciar qualquer programa de exercício pós-parto. Ouça o seu corpo e pare se sentir dor ou desconforto.",
+      clickForWorkout: "Clique abaixo para obter a sua rotina de treino personalizada",
+      start: "Iniciar Timer",
+      resume: "Retomar",
+      pause: "Pausar",
+      reset: "Reiniciar",
+      go: "GO",
+      rest: "REST",
+      round: "Volta",
+      wellDone: "Parabéns!",
+      congratulations: "Trabalho incrível! Completou o treino!",
+      tryAgain: "Fazer Novamente",
+      workoutTypes: {
+        AMRAP: "Máximo de Voltas Possível - Complete o circuito o máximo de vezes que conseguir no tempo dado",
+        EMOM: "Realizar um exercício durante o minuto - Comece cada exercício no início de cada minuto",
+        Tabata: "20 segundos trabalho / 10 segundos descanso - Intervalos de alta intensidade durante 8 voltas",
+        ForTime: "Completar o mais rápido possível - Termine todos os exercícios e voltas no menor tempo",
+        Rounds: "Completar todas as voltas com repetições especificadas - Trabalhe cada volta com as repetições dadas",
+        Intervals: "Trabalhar e descansar durante períodos de tempo especificados - Alterne entre intervalos de trabalho e descanso"
+      }
+    }
+  };
+
+  const exerciseHelp = {
+    en: {
+      "Side taps": "Stand with feet hip-width apart. Tap one foot to the side and return, raising straight arms up over the head with each tap. Alternate sides.",
+      "Ground to Overhead (G2OH)": "Pick up a light weight from the ground and press it overhead in one fluid motion.",
+      "Floor Press": "Lie on your back with knees bent. Press weights up from chest level.",
+      "Squat with kick": "Perform a squat, then kick one leg to the side as you stand. Alternate legs.",
+      "Knee raises": "Standing, lift one knee toward chest. Alternate legs.",
+      "Good mornings": "Stand with hands behind head. Hinge at hips, keeping back straight, then return to standing.",
+      "Thruster": "Hold light weights at shoulders. Squat down, then press weights overhead as you stand.",
+      "Air squats": "Squat without weights, keeping chest up and weight in heels.",
+      "Modified burpees": "Step back one foot at a time to laying down on floor position then step forward and stand up (no jumping).",
+      "Chest Press": "Lying on back or standing, press weights away from chest.",
+      "Alternating pointers (Bird dogs)": "On hands and knees, extend opposite arm and leg. Alternate sides.",
+      "Reverse Lunges": "Step one foot back into a lunge, then return. Alternate legs.",
+      "Glute bridge": "Lie on back with knees bent. Lift hips toward ceiling, squeeze glutes.",
+      "Wall sit": "Back against wall, slide down to sitting position. Hold.",
+      "Rows": "Hinge forward slightly, pull weights toward ribs keeping elbows close to body.",
+      "Snatch": "One fluid motion lifting weight from ground to overhead.",
+      "Deadlift": "Hinge at hips to lower weights toward ground, keeping back straight. Stand up.",
+      "Reverse Nordic Curl": "Kneeling, lean back slowly keeping body straight. Return to start.",
+      "Skull crushers": "Lying down, bend elbows to lower weights toward forehead, then extend.",
+      "Bent over row": "Hinge at hips, pull weights toward lower ribs.",
+      "Reverse Fly": "Hinge forward, raise weights out to sides with slight bend in elbows.",
+      "Push Press": "Use slight leg drive to help press weights overhead.",
+      "Slides": "In glute bridge position with feet on sliders or towels, slide feet down and back, then return to bridge position.",
+      "Bicep Curl": "Curl weights toward shoulders, keeping elbows still.",
+      "Lunge with kick": "Perform a lunge, then kick forward as you stand.",
+      "French press": "Standing or seated, lower weight behind head by bending elbows, then extend overhead.",
+      "Hang clean": "Pull weight from hang position (mid-thigh) to shoulder level.",
+      "Seal jacks": "Arms only jumping jack motion - clap hands in front and behind.",
+      "Taps behind with band": "Hold band or towel overhead, tap hands behind head alternating sides.",
+      "Heel kicks": "Stand with feet hip-width apart. Alternately kick heels up toward glutes as fast as comfortable. Keep core engaged.",
+      "Strict Press": "Press weights overhead from shoulder height without using legs.",
+      "Knee to chest": "Lying on back, bring one knee toward chest. Alternate legs."
+    },
+    pt: {
+      "Toques ao lado": "De pé, com os pés à largura das ancas. Toque um pé para o lado e volte, levantando os braços esticados acima da cabeça com cada toque. Alterne os lados.",
+      "Ground to Overhead (G2OH)": "Levante um peso leve do chão e pressione-o acima da cabeça num movimento fluido.",
+      "Floor Press": "Deitada de costas com joelhos dobrados. Pressione pesos para cima do nível do peito.",
+      "Squat com chuto": "Faça um agachamento, depois chute uma perna para o lado ao levantar. Alterne as pernas.",
+      "Joelhos": "De pé, levante um joelho em direção ao peito. Alterne as pernas.",
+      "Bons dias": "De pé com as mãos atrás da cabeça. Dobre nas ancas, mantendo as costas direitas, depois volte a ficar de pé.",
+      "Thruster": "Segure pesos leves nos ombros. Agache, depois pressione os pesos acima da cabeça ao levantar.",
+      "Air squats": "Agachamento sem pesos, mantendo o peito para cima e o peso nos calcanhares.",
+      "Burpees adaptados": "Dê um passo para trás um pé de cada vez até à posição deitada no chão, depois passo para a frente e levante-se (sem saltos).",
+      "Chest Press": "Deitada de costas ou de pé, pressione pesos para longe do peito.",
+      "Pointers alternados": "De quatro apoios, estenda o braço e perna opostos. Alterne os lados.",
+      "Reverse Lunges": "Dê um passo para trás num lunge, depois volte. Alterne as pernas.",
+      "Ponte de Glúteos": "Deitada de costas com joelhos dobrados. Levante as ancas em direção ao teto, aperte os glúteos.",
+      "Wall sit": "Costas contra a parede, deslize para baixo até à posição sentada. Segure.",
+      "Remadas": "Incline-se ligeiramente para a frente, puxe pesos em direção às costelas mantendo os cotovelos perto do corpo.",
+      "Snatch": "Um movimento fluido levantando peso do chão acima da cabeça.",
+      "Deadlift": "Dobre nas ancas para baixar pesos em direção ao chão, mantendo as costas direitas. Levante-se.",
+      "Reverse Nordic Curl": "Ajoelhada, incline-se lentamente para trás mantendo o corpo direito. Volte ao início.",
+      "Tricípete à testa": "Deitada, dobre os cotovelos para baixar pesos em direção à testa, depois estenda.",
+      "Bent over row": "Incline-se nas ancas, puxe pesos em direção às costelas inferiores.",
+      "Reverse Fly": "Incline-se para a frente, levante pesos para os lados com ligeira flexão nos cotovelos.",
+      "Push Press": "Use ligeiro impulso das pernas para ajudar a pressionar pesos acima da cabeça.",
+      "Slides": "Na posição de ponte de glúteos com os pés em deslizadores ou toalhas, deslize os pés para baixo e para trás, depois volte à posição de ponte.",
+      "Bicep Curl": "Curve os pesos em direção aos ombros, mantendo os cotovelos parados.",
+      "Lunge com chuto": "Faça um lunge, depois chute para a frente ao levantar.",
+      "Tricípete Francês": "De pé ou sentada, baixe o peso atrás da cabeça dobrando os cotovelos, depois estenda acima da cabeça.",
+      "Hang clean": "Puxe o peso da posição suspensa (meio da coxa) até ao nível do ombro.",
+      "Seal jacks": "Movimento de jumping jack apenas com os braços - bata palmas à frente e atrás.",
+      "Toques atrás com banda": "Segure banda ou toalha acima da cabeça, toque as mãos atrás da cabeça alternando os lados.",
+      "Calcanhares": "De pé com os pés à largura das ancas. Alterne chutando os calcanhares em direção aos glúteos o mais rápido que for confortável. Mantenha o core ativado.",
+      "Strict Press": "Pressione pesos acima da cabeça a partir da altura do ombro sem usar as pernas.",
+      "Joelho ao peito": "Deitada de costas, traga um joelho em direção ao peito. Alterne as pernas."
+    }
+  };
+
+  const weightedExercises = [
+    "Ground to Overhead", "G2OH", "Floor Press", "Thruster", "Chest Press", 
+    "Rows", "Snatch", "Deadlift", "Skull crushers", "Tricípete", "Remadas",
+    "Bent over row", "Reverse Fly", "Push Press", "Bicep Curl", "French press",
+    "Hang clean", "Strict Press"
+  ];
+
+  const workouts = [
+    {
+      type: "AMRAP",
+      duration: "10 min",
+      needsTimer: true,
+      name: { en: "Core & Lower Body Circuit", pt: "Circuito Core e Membros Inferiores" },
+      exercises: {
+        en: [
+          { name: "Side taps", reps: "30" },
+          { name: "Ground to Overhead (G2OH)", reps: "12" },
+          { name: "Floor Press", reps: "15" },
+          { name: "Squat with kick", reps: "12" }
+        ],
+        pt: [
+          { name: "Toques ao lado", reps: "30" },
+          { name: "Ground to Overhead (G2OH)", reps: "12" },
+          { name: "Floor Press", reps: "15" },
+          { name: "Squat com chuto", reps: "12" }
+        ]
+      }
+    },
+    {
+      type: "Rounds",
+      needsTimer: false,
+      name: { en: "Pyramid Power", pt: "Pirâmide de Força" },
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "10-20-10-20" },
+          { name: "Knee raises", reps: "10-20-10-20" },
+          { name: "Side taps", reps: "10-20-10-20" },
+          { name: "Good mornings", reps: "10-20-10-20" }
+        ],
+        pt: [
+          { name: "Air squats", reps: "10-20-10-20" },
+          { name: "Joelhos", reps: "10-20-10-20" },
+          { name: "Toques ao lado", reps: "10-20-10-20" },
+          { name: "Bons dias", reps: "10-20-10-20" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "10 min",
+      needsTimer: true,
+      name: { en: "Strength & Cardio Mix", pt: "Mix Força e Cardio" },
+      exercises: {
+        en: [
+          { name: "Ground to Overhead (G2OH)", reps: "10" },
+          { name: "Thruster", reps: "10" },
+          { name: "Alternating pointers (Bird dogs)", reps: "10" }
+        ],
+        pt: [
+          { name: "Ground to Overhead (G2OH)", reps: "10" },
+          { name: "Thruster", reps: "10" },
+          { name: "Pointers alternados", reps: "10" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "7 min",
+      needsTimer: true,
+      name: { en: "Quick Burner", pt: "Queima Rápida" },
+      exercises: {
+        en: [
+          { name: "Modified burpees", reps: "6" },
+          { name: "Chest Press", reps: "6" },
+          { name: "Air squats", reps: "6" }
+        ],
+        pt: [
+          { name: "Burpees adaptados", reps: "6" },
+          { name: "Chest Press", reps: "6" },
+          { name: "Air squats", reps: "6" }
+        ]
+      }
+    },
+    {
+      type: "EMOM",
+      duration: "9 min",
+      needsTimer: true,
+      name: { en: "Triple Threat", pt: "Tripla Ameaça" },
+      exercises: {
+        en: [
+          { name: "Modified burpees", reps: "" },
+          { name: "Chest Press", reps: "" },
+          { name: "Air squats", reps: "" }
+        ],
+        pt: [
+          { name: "Burpees adaptados", reps: "" },
+          { name: "Chest Press", reps: "" },
+          { name: "Air squats", reps: "" }
+        ]
+      }
+    },
+    {
+      type: "Tabata",
+      needsTimer: true,
+      duration: "8 min",
+      name: { en: "Tabata Double", pt: "Tabata Duplo" },
+      tabataCount: 2,
+      exercises: {
+        en: [
+          { name: "Thruster", reps: "", tabataGroup: 1 },
+          { name: "Reverse Lunges", reps: "", tabataGroup: 1 },
+          { name: "Glute bridge", reps: "", tabataGroup: 2 },
+          { name: "Wall sit", reps: "", tabataGroup: 2 }
+        ],
+        pt: [
+          { name: "Thruster", reps: "", tabataGroup: 1 },
+          { name: "Reverse Lunges", reps: "", tabataGroup: 1 },
+          { name: "Ponte de Glúteos", reps: "", tabataGroup: 2 },
+          { name: "Wall sit", reps: "", tabataGroup: 2 }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "8 min",
+      needsTimer: true,
+      name: { en: "Back & Legs", pt: "Costas e Pernas" },
+      exercises: {
+        en: [
+          { name: "Rows", reps: "5" },
+          { name: "Floor Press", reps: "10" },
+          { name: "Air squats", reps: "15" }
+        ],
+        pt: [
+          { name: "Remadas", reps: "5" },
+          { name: "Floor Press", reps: "10" },
+          { name: "Air squats", reps: "15" }
+        ]
+      }
+    },
+    {
+      type: "EMOM",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Four Square", pt: "Quatro Quadrados" },
+      exercises: {
+        en: [
+          { name: "Chest Press", reps: "" },
+          { name: "Skull crushers", reps: "" },
+          { name: "Snatch", reps: "" },
+          { name: "Air squats", reps: "" }
+        ],
+        pt: [
+          { name: "Chest Press", reps: "" },
+          { name: "Tricípete à testa", reps: "" },
+          { name: "Snatch", reps: "" },
+          { name: "Air squats", reps: "" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Strength Builder", pt: "Construtor de Força" },
+      exercises: {
+        en: [
+          { name: "Deadlift", reps: "20" },
+          { name: "Air squats", reps: "15" },
+          { name: "Reverse Nordic Curl", reps: "10" },
+          { name: "Wall sit", reps: "1 min" }
+        ],
+        pt: [
+          { name: "Deadlift", reps: "20" },
+          { name: "Air squats", reps: "15" },
+          { name: "Reverse Nordic Curl", reps: "10" },
+          { name: "Wall sit", reps: "1 min" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "9 min",
+      needsTimer: true,
+      name: { en: "Leg Day", pt: "Dia de Pernas" },
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "10" },
+          { name: "Deadlift", reps: "12" },
+          { name: "Side taps", reps: "20" }
+        ],
+        pt: [
+          { name: "Air squats", reps: "10" },
+          { name: "Deadlift", reps: "12" },
+          { name: "Toques ao lado", reps: "20" }
+        ]
+      }
+    },
+    {
+      type: "Rounds",
+      name: { en: "Full Body Sequence", pt: "Sequência Corpo Inteiro" },
+      needsTimer: false,
+      exercises: {
+        en: [
+          { name: "Side taps", reps: "30-20-10-20-30" },
+          { name: "Knee to chest", reps: "30-20-10-20-30 each leg" },
+          { name: "Heel kicks", reps: "30-20-10-20-30" },
+          { name: "Ground to Overhead (G2OH)", reps: "30-20-10-20-30" }
+        ],
+        pt: [
+          { name: "Toques ao lado", reps: "30-20-10-20-30" },
+          { name: "Joelho ao peito", reps: "30-20-10-20-30 cada perna" },
+          { name: "Calcanhares", reps: "30-20-10-20-30" },
+          { name: "Ground to Overhead (G2OH)", reps: "30-20-10-20-30" }
+        ]
+      },
+      additional: {
+        en: "Then: 8 min AMRAP of 10 Thrusters + 10 Reverse Lunges + 10 G2OH",
+        pt: "Depois: 8 min AMRAP de 10 Thrusters + 10 Reverse Lunges + 10 G2OH"
+      }
+    },
+    {
+      type: "Rounds",
+      name: { en: "Descending Ladder", pt: "Escada Descendente" },
+      needsTimer: false,
+      exercises: {
+        en: [
+          { name: "Side taps", reps: "21-15-9-6-3" },
+          { name: "Reverse Lunges", reps: "21-15-9-6-3" },
+          { name: "Air squats", reps: "21-15-9-6-3" },
+          { name: "Floor Press", reps: "21-15-9-6-3" }
+        ],
+        pt: [
+          { name: "Toques ao lado", reps: "21-15-9-6-3" },
+          { name: "Reverse Lunges", reps: "21-15-9-6-3" },
+          { name: "Air squats", reps: "21-15-9-6-3" },
+          { name: "Floor Press", reps: "21-15-9-6-3" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      name: { en: "Power AMRAP", pt: "AMRAP Potência" },
+      needsTimer: true,
+      duration: "10 min",
+      exercises: {
+        en: [
+          { name: "Modified burpees", reps: "4" },
+          { name: "Strict Press", reps: "7" },
+          { name: "Ground to Overhead (G2OH)", reps: "10" },
+          { name: "Side taps", reps: "15" }
+        ],
+        pt: [
+          { name: "Burpees adaptados", reps: "4" },
+          { name: "Strict Press", reps: "7" },
+          { name: "Ground to Overhead (G2OH)", reps: "10" },
+          { name: "Toques ao lado", reps: "15" }
+        ]
+      }
+    },
+    {
+      type: "Rounds",
+      name: { en: "Upper Body Focus", pt: "Foco Membros Superiores" },
+      needsTimer: false,
+      exercises: {
+        en: [
+          { name: "Thruster", reps: "15-12-10-8" },
+          { name: "Chest Press", reps: "15-12-10-8" },
+          { name: "Ground to Overhead (G2OH)", reps: "15-12-10-8" }
+        ],
+        pt: [
+          { name: "Thruster", reps: "15-12-10-8" },
+          { name: "Chest Press", reps: "15-12-10-8" },
+          { name: "Ground to Overhead (G2OH)", reps: "15-12-10-8" }
+        ]
+      }
+    },
+    {
+      type: "Intervals",
+      duration: "9 min",
+      needsTimer: true,
+      name: { en: "Power Intervals", pt: "Intervalos de Potência" },
+      exercises: {
+        en: [
+          { name: "Snatch", reps: "50s work / 10s rest" },
+          { name: "Thruster", reps: "50s work / 10s rest" },
+          { name: "Bent over row", reps: "50s work / 10s rest" }
+        ],
+        pt: [
+          { name: "Snatch", reps: "50s trabalho / 10s descanso" },
+          { name: "Thruster", reps: "50s trabalho / 10s descanso" },
+          { name: "Bent over row", reps: "50s trabalho / 10s descanso" }
+        ]
+      }
+    },
+    {
+      type: "EMOM",
+      duration: "9 min",
+      needsTimer: true,
+      name: { en: "Lower Body EMOM", pt: "EMOM Membros Inferiores" },
+      exercises: {
+        en: [
+          { name: "Thruster", reps: "" },
+          { name: "Glute bridge", reps: "" },
+          { name: "Wall sit", reps: "" }
+        ],
+        pt: [
+          { name: "Thruster", reps: "" },
+          { name: "Ponte de Glúteos", reps: "" },
+          { name: "Wall sit", reps: "" }
+        ]
+      }
+    },
+    {
+      type: "Rounds",
+      name: { en: "Full Body Descending", pt: "Corpo Inteiro Descendente" },
+      needsTimer: false,
+      exercises: {
+        en: [
+          { name: "Side taps", reps: "21-15-12-9" },
+          { name: "Reverse Lunges", reps: "21-15-12-9" },
+          { name: "Push Press", reps: "21-15-12-9" },
+          { name: "Air squats", reps: "21-15-12-9" }
+        ],
+        pt: [
+          { name: "Toques ao lado", reps: "21-15-12-9" },
+          { name: "Reverse Lunges", reps: "21-15-12-9" },
+          { name: "Push Press", reps: "21-15-12-9" },
+          { name: "Air squats", reps: "21-15-12-9" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "10 min",
+      needsTimer: true,
+      name: { en: "Upper Back Focus", pt: "Foco Costas Superiores" },
+      exercises: {
+        en: [
+          { name: "Bent over row", reps: "12" },
+          { name: "Reverse Fly", reps: "12" },
+          { name: "Alternating pointers (Bird dogs)", reps: "12" }
+        ],
+        pt: [
+          { name: "Bent over row", reps: "12" },
+          { name: "Reverse Fly", reps: "12" },
+          { name: "Pointers alternados", reps: "12" }
+        ]
+      }
+    },
+    {
+      type: "ForTime",
+      name: { en: "Triple Time Challenge", pt: "Desafio Triplo Tempo" },
+      needsTimer: false,
+      exercises: {
+        en: [
+          { name: "Side taps", reps: "50 x3" },
+          { name: "Taps behind with band", reps: "40 x3" },
+          { name: "Reverse Lunges", reps: "30 x3" },
+          { name: "Good mornings", reps: "20 x3" },
+          { name: "Air squats", reps: "10 x3" }
+        ],
+        pt: [
+          { name: "Toques ao lado", reps: "50 x3" },
+          { name: "Toques atrás com banda", reps: "40 x3" },
+          { name: "Reverse Lunges", reps: "30 x3" },
+          { name: "Bons dias", reps: "20 x3" },
+          { name: "Air squats", reps: "10 x3" }
+        ]
+      }
+    },
+    {
+      type: "Intervals",
+      name: { en: "Burpee Blaster", pt: "Explosão Burpees" },
+      needsTimer: true,
+      duration: "12 min",
+      exercises: {
+        en: [
+          { name: "Modified burpees", reps: "45s work / 15s rest" },
+          { name: "Reverse Lunges", reps: "45s work / 15s rest" },
+          { name: "Ground to Overhead (G2OH)", reps: "45s work / 15s rest" }
+        ],
+        pt: [
+          { name: "Burpees adaptados", reps: "45s trabalho / 15s descanso" },
+          { name: "Reverse Lunges", reps: "45s trabalho / 15s descanso" },
+          { name: "Ground to Overhead (G2OH)", reps: "45s trabalho / 15s descanso" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "10 min",
+      needsTimer: true,
+      name: { en: "Arms & Legs", pt: "Braços e Pernas" },
+      exercises: {
+        en: [
+          { name: "Snatch", reps: "12" },
+          { name: "French press", reps: "15" },
+          { name: "Reverse Lunges", reps: "12" },
+          { name: "Bicep Curl", reps: "15" }
+        ],
+        pt: [
+          { name: "Snatch", reps: "12" },
+          { name: "Tricípete Francês", reps: "15" },
+          { name: "Reverse Lunges", reps: "12" },
+          { name: "Bicep Curl", reps: "15" }
+        ]
+      }
+    },
+    {
+      type: "Tabata",
+      name: { en: "Double Tabata Upper/Lower", pt: "Tabata Duplo Superior/Inferior" },
+      needsTimer: true,
+      duration: "8 min",
+      tabataCount: 2,
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "", tabataGroup: 1 },
+          { name: "Hang clean", reps: "", tabataGroup: 1 },
+          { name: "Chest Press", reps: "", tabataGroup: 2 },
+          { name: "Skull crushers", reps: "", tabataGroup: 2 }
+        ],
+        pt: [
+          { name: "Air squats", reps: "", tabataGroup: 1 },
+          { name: "Hang clean", reps: "", tabataGroup: 1 },
+          { name: "Chest Press", reps: "", tabataGroup: 2 },
+          { name: "Tricípete à testa", reps: "", tabataGroup: 2 }
+        ]
+      }
+    },
+    {
+      type: "Rounds",
+      name: { en: "Dynamic Four", pt: "Quatro Dinâmico" },
+      needsTimer: false,
+      exercises: {
+        en: [
+          { name: "Slides", reps: "21-15-12-9" },
+          { name: "Reverse Lunges", reps: "21-15-12-9" },
+          { name: "Push Press", reps: "21-15-12-9" },
+          { name: "Snatch", reps: "21-15-12-9" }
+        ],
+        pt: [
+          { name: "Slides", reps: "21-15-12-9" },
+          { name: "Reverse Lunges", reps: "21-15-12-9" },
+          { name: "Push Press", reps: "21-15-12-9" },
+          { name: "Snatch", reps: "21-15-12-9" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "8 min",
+      needsTimer: true,
+      name: { en: "Cardio & Strength", pt: "Cardio e Força" },
+      exercises: {
+        en: [
+          { name: "Heel kicks", reps: "50" },
+          { name: "Squat with kick", reps: "30" },
+          { name: "Reverse Lunges", reps: "10" }
+        ],
+        pt: [
+          { name: "Calcanhares", reps: "50" },
+          { name: "Squat com chuto", reps: "30" },
+          { name: "Reverse Lunges", reps: "10" }
+        ]
+      },
+      additional: {
+        en: "Then: Tabata Modified burpees (or knee raises if not doing burpees)",
+        pt: "Depois: Tabata Burpees adaptados (ou joelhos ao peito se não faz burpees)"
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "10 min",
+      needsTimer: true,
+      name: { en: "Progressive Challenge", pt: "Desafio Progressivo" },
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "10-12-14..." },
+          { name: "Snatch", reps: "10-12-14..." },
+          { name: "Lunge with kick", reps: "10-12-14..." },
+          { name: "Heel kicks", reps: "50 (always)" },
+          { name: "Bicep Curl", reps: "1 min max" }
+        ],
+        pt: [
+          { name: "Air squats", reps: "10-12-14..." },
+          { name: "Snatch", reps: "10-12-14..." },
+          { name: "Lunge com chuto", reps: "10-12-14..." },
+          { name: "Calcanhares", reps: "50 (sempre)" },
+          { name: "Bicep Curl", reps: "1 min máx" }
+        ]
+      }
+    },
+    {
+      type: "Tabata",
+      name: { en: "Lower Body Tabata Triple", pt: "Tabata Triplo Membros Inferiores" },
+      needsTimer: true,
+      duration: "12 min",
+      tabataCount: 3,
+      exercises: {
+        en: [
+          { name: "Glute bridge", reps: "", tabataGroup: 1 },
+          { name: "Reverse Lunges", reps: "", tabataGroup: 1 },
+          { name: "Alternating pointers (Bird dogs)", reps: "", tabataGroup: 2 },
+          { name: "Air squats", reps: "", tabataGroup: 2 },
+          { name: "Wall sit", reps: "", tabataGroup: 3 },
+          { name: "Side taps", reps: "", tabataGroup: 3 }
+        ],
+        pt: [
+          { name: "Ponte de Glúteos", reps: "", tabataGroup: 1 },
+          { name: "Reverse Lunges", reps: "", tabataGroup: 1 },
+          { name: "Pointers alternados", reps: "", tabataGroup: 2 },
+          { name: "Air squats", reps: "", tabataGroup: 2 },
+          { name: "Wall sit", reps: "", tabataGroup: 3 },
+          { name: "Toques ao lado", reps: "", tabataGroup: 3 }
+        ]
+      }
+    },
+    {
+      type: "Intervals",
+      name: { en: "Weekend Warrior", pt: "Guerreiro do Fim de Semana" },
+      needsTimer: true,
+      duration: "12 min",
+      exercises: {
+        en: [
+          { name: "Bent over row", reps: "3 min work / 1 min rest" },
+          { name: "Reverse Fly", reps: "3 min work / 1 min rest" },
+          { name: "Thruster", reps: "3 min work / 1 min rest" },
+          { name: "Seal jacks", reps: "30s" }
+        ],
+        pt: [
+          { name: "Bent over row", reps: "3 min trabalho / 1 min descanso" },
+          { name: "Reverse Fly", reps: "3 min trabalho / 1 min descanso" },
+          { name: "Thruster", reps: "3 min trabalho / 1 min descanso" },
+          { name: "Seal jacks", reps: "30s" }
+        ]
+      }
+    },
+    {
+      type: "Intervals",
+      name: { en: "Four Round Burn", pt: "Queima Quatro Voltas" },
+      needsTimer: true,
+      duration: "10 min",
+      exercises: {
+        en: [
+          { name: "Modified burpees", reps: "2 min work / 30s rest" },
+          { name: "Side taps", reps: "2 min work / 30s rest" },
+          { name: "Thruster", reps: "2 min work / 30s rest" },
+          { name: "Ground to Overhead (G2OH)", reps: "2 min work / 30s rest" }
+        ],
+        pt: [
+          { name: "Burpees adaptados", reps: "2 min trabalho / 30s descanso" },
+          { name: "Toques ao lado", reps: "2 min trabalho / 30s descanso" },
+          { name: "Thruster", reps: "2 min trabalho / 30s descanso" },
+          { name: "Ground to Overhead (G2OH)", reps: "2 min trabalho / 30s descanso" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "10 min",
+      needsTimer: true,
+      name: { en: "Total Body Blast", pt: "Explosão Corpo Total" },
+      exercises: {
+        en: [
+          { name: "Deadlift", reps: "8" },
+          { name: "Push Press", reps: "10" },
+          { name: "Air squats", reps: "12" },
+          { name: "Alternating pointers (Bird dogs)", reps: "14" }
+        ],
+        pt: [
+          { name: "Deadlift", reps: "8" },
+          { name: "Push Press", reps: "10" },
+          { name: "Air squats", reps: "12" },
+          { name: "Pointers alternados", reps: "14" }
+        ]
+      }
+    },
+    {
+      type: "EMOM",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Split EMOM", pt: "EMOM Divisão" },
+      exercises: {
+        en: [
+          { name: "Thruster", reps: "" },
+          { name: "Reverse Lunges", reps: "" },
+          { name: "Bent over row", reps: "" },
+          { name: "Glute bridge", reps: "" }
+        ],
+        pt: [
+          { name: "Thruster", reps: "" },
+          { name: "Reverse Lunges", reps: "" },
+          { name: "Bent over row", reps: "" },
+          { name: "Ponte de Glúteos", reps: "" }
+        ]
+      }
+    },
+    {
+      type: "Rounds",
+      name: { en: "Ascending Pyramid", pt: "Pirâmide Ascendente" },
+      needsTimer: false,
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "5-10-15-20" },
+          { name: "Floor Press", reps: "5-10-15-20" },
+          { name: "Reverse Lunges", reps: "5-10-15-20" },
+          { name: "Snatch", reps: "5-10-15-20" }
+        ],
+        pt: [
+          { name: "Air squats", reps: "5-10-15-20" },
+          { name: "Floor Press", reps: "5-10-15-20" },
+          { name: "Reverse Lunges", reps: "5-10-15-20" },
+          { name: "Snatch", reps: "5-10-15-20" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Core Stability", pt: "Estabilidade Core" },
+      exercises: {
+        en: [
+          { name: "Alternating pointers (Bird dogs)", reps: "16" },
+          { name: "Glute bridge", reps: "20" },
+          { name: "Side taps", reps: "24" },
+          { name: "Wall sit", reps: "30s" }
+        ],
+        pt: [
+          { name: "Pointers alternados", reps: "16" },
+          { name: "Ponte de Glúteos", reps: "20" },
+          { name: "Toques ao lado", reps: "24" },
+          { name: "Wall sit", reps: "30s" }
+        ]
+      }
+    },
+    {
+      type: "Intervals",
+      name: { en: "Tabata Style Intervals", pt: "Intervalos Estilo Tabata" },
+      needsTimer: true,
+      duration: "8 min",
+      exercises: {
+        en: [
+          { name: "Modified burpees", reps: "20s work / 10s rest" },
+          { name: "Air squats", reps: "20s work / 10s rest" },
+          { name: "Chest Press", reps: "20s work / 10s rest" },
+          { name: "Knee raises", reps: "20s work / 10s rest" }
+        ],
+        pt: [
+          { name: "Burpees adaptados", reps: "20s trabalho / 10s descanso" },
+          { name: "Air squats", reps: "20s trabalho / 10s descanso" },
+          { name: "Chest Press", reps: "20s trabalho / 10s descanso" },
+          { name: "Joelhos", reps: "20s trabalho / 10s descanso" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Endurance Builder", pt: "Construtor de Resistência" },
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "15" },
+          { name: "Thruster", reps: "10" },
+          { name: "Reverse Lunges", reps: "12" },
+          { name: "Rows", reps: "8" },
+          { name: "Side taps", reps: "20" }
+        ],
+        pt: [
+          { name: "Air squats", reps: "15" },
+          { name: "Thruster", reps: "10" },
+          { name: "Reverse Lunges", reps: "12" },
+          { name: "Remadas", reps: "8" },
+          { name: "Toques ao lado", reps: "20" }
+        ]
+      }
+    },
+    {
+      type: "EMOM",
+      duration: "10 min",
+      needsTimer: true,
+      name: { en: "Alternating Strength", pt: "Força Alternada" },
+      exercises: {
+        en: [
+          { name: "Deadlift", reps: "" },
+          { name: "Push Press", reps: "" }
+        ],
+        pt: [
+          { name: "Deadlift", reps: "" },
+          { name: "Push Press", reps: "" }
+        ]
+      }
+    },
+    {
+      type: "Rounds",
+      name: { en: "Chipper Challenge", pt: "Desafio Chipper" },
+      needsTimer: false,
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "50" },
+          { name: "Floor Press", reps: "40" },
+          { name: "Reverse Lunges", reps: "30" },
+          { name: "Bent over row", reps: "20" },
+          { name: "Thruster", reps: "10" }
+        ],
+        pt: [
+          { name: "Air squats", reps: "50" },
+          { name: "Floor Press", reps: "40" },
+          { name: "Reverse Lunges", reps: "30" },
+          { name: "Bent over row", reps: "20" },
+          { name: "Thruster", reps: "10" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "11 min",
+      needsTimer: true,
+      name: { en: "Mixed Modal", pt: "Modal Misto" },
+      exercises: {
+        en: [
+          { name: "Modified burpees", reps: "5" },
+          { name: "Snatch", reps: "10" },
+          { name: "Air squats", reps: "15" },
+          { name: "Glute bridge", reps: "20" }
+        ],
+        pt: [
+          { name: "Burpees adaptados", reps: "5" },
+          { name: "Snatch", reps: "10" },
+          { name: "Air squats", reps: "15" },
+          { name: "Ponte de Glúteos", reps: "20" }
+        ]
+      }
+    },
+    {
+      type: "Intervals",
+      name: { en: "On/Off Sprint", pt: "Sprint On/Off" },
+      needsTimer: true,
+      duration: "12 min",
+      exercises: {
+        en: [
+          { name: "Side taps", reps: "40s work / 20s rest" },
+          { name: "Thruster", reps: "40s work / 20s rest" },
+          { name: "Reverse Lunges", reps: "40s work / 20s rest" }
+        ],
+        pt: [
+          { name: "Toques ao lado", reps: "40s trabalho / 20s descanso" },
+          { name: "Thruster", reps: "40s trabalho / 20s descanso" },
+          { name: "Reverse Lunges", reps: "40s trabalho / 20s descanso" }
+        ]
+      }
+    },
+    {
+      type: "EMOM",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Push/Pull Balance", pt: "Equilíbrio Push/Pull" },
+      exercises: {
+        en: [
+          { name: "Push Press", reps: "" },
+          { name: "Bent over row", reps: "" },
+          { name: "Air squats", reps: "" }
+        ],
+        pt: [
+          { name: "Push Press", reps: "" },
+          { name: "Bent over row", reps: "" },
+          { name: "Air squats", reps: "" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Full Spectrum", pt: "Espectro Completo" },
+      exercises: {
+        en: [
+          { name: "Deadlift", reps: "6" },
+          { name: "Chest Press", reps: "8" },
+          { name: "Reverse Lunges", reps: "10" },
+          { name: "Reverse Fly", reps: "12" },
+          { name: "Air squats", reps: "14" }
+        ],
+        pt: [
+          { name: "Deadlift", reps: "6" },
+          { name: "Chest Press", reps: "8" },
+          { name: "Reverse Lunges", reps: "10" },
+          { name: "Reverse Fly", reps: "12" },
+          { name: "Air squats", reps: "14" }
+        ]
+      }
+    },
+    {
+      type: "Tabata",
+      name: { en: "Core Tabata", pt: "Tabata Core" },
+      needsTimer: true,
+      duration: "8 min",
+      tabataCount: 2,
+      exercises: {
+        en: [
+          { name: "Alternating pointers (Bird dogs)", reps: "", tabataGroup: 1 },
+          { name: "Glute bridge", reps: "", tabataGroup: 1 },
+          { name: "Heel kicks", reps: "", tabataGroup: 2 },
+          { name: "Glute bridge", reps: "", tabataGroup: 2 }
+        ],
+        pt: [
+          { name: "Pointers alternados", reps: "", tabataGroup: 1 },
+          { name: "Ponte de Glúteos", reps: "", tabataGroup: 1 },
+          { name: "Calcanhares", reps: "", tabataGroup: 2 },
+          { name: "Ponte de Glúteos", reps: "", tabataGroup: 2 }
+        ]
+      }
+    },
+    {
+      type: "Rounds",
+      name: { en: "Classic Ladder", pt: "Escada Clássica" },
+      needsTimer: false,
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "20-15-10-5" },
+          { name: "Thruster", reps: "20-15-10-5" },
+          { name: "Rows", reps: "20-15-10-5" },
+          { name: "Side taps", reps: "20-15-10-5" }
+        ],
+        pt: [
+          { name: "Air squats", reps: "20-15-10-5" },
+          { name: "Thruster", reps: "20-15-10-5" },
+          { name: "Remadas", reps: "20-15-10-5" },
+          { name: "Toques ao lado", reps: "20-15-10-5" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Distance Challenge", pt: "Desafio Distância" },
+      exercises: {
+        en: [
+          { name: "Side taps", reps: "30" },
+          { name: "Modified burpees", reps: "6" },
+          { name: "Snatch", reps: "12" },
+          { name: "Reverse Lunges", reps: "18" },
+          { name: "Air squats", reps: "24" }
+        ],
+        pt: [
+          { name: "Toques ao lado", reps: "30" },
+          { name: "Burpees adaptados", reps: "6" },
+          { name: "Snatch", reps: "12" },
+          { name: "Reverse Lunges", reps: "18" },
+          { name: "Air squats", reps: "24" }
+        ]
+      }
+    },
+    {
+      type: "EMOM",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Circuit EMOM", pt: "EMOM Circuito" },
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "" },
+          { name: "Push Press", reps: "" },
+          { name: "Reverse Lunges", reps: "" },
+          { name: "Bent over row", reps: "" },
+          { name: "Glute bridge", reps: "" },
+          { name: "Alternating pointers (Bird dogs)", reps: "" }
+        ],
+        pt: [
+          { name: "Air squats", reps: "" },
+          { name: "Push Press", reps: "" },
+          { name: "Reverse Lunges", reps: "" },
+          { name: "Bent over row", reps: "" },
+          { name: "Ponte de Glúteos", reps: "" },
+          { name: "Pointers alternados", reps: "" }
+        ]
+      }
+    },
+    {
+      type: "Intervals",
+      name: { en: "Power Hour Sampler", pt: "Amostra Power Hour" },
+      needsTimer: true,
+      duration: "12 min",
+      exercises: {
+        en: [
+          { name: "Thruster", reps: "45s work / 15s rest" },
+          { name: "Modified burpees", reps: "45s work / 15s rest" },
+          { name: "Snatch", reps: "45s work / 15s rest" },
+          { name: "Air squats", reps: "45s work / 15s rest" }
+        ],
+        pt: [
+          { name: "Thruster", reps: "45s trabalho / 15s descanso" },
+          { name: "Burpees adaptados", reps: "45s trabalho / 15s descanso" },
+          { name: "Snatch", reps: "45s trabalho / 15s descanso" },
+          { name: "Air squats", reps: "45s trabalho / 15s descanso" }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Ultimate Test", pt: "Teste Final" },
+      exercises: {
+        en: [
+          { name: "Deadlift", reps: "10" },
+          { name: "Push Press", reps: "10" },
+          { name: "Reverse Lunges", reps: "20" },
+          { name: "Bent over row", reps: "10" },
+          { name: "Air squats", reps: "20" },
+          { name: "Side taps", reps: "30" }
+        ],
+        pt: [
+          { name: "Deadlift", reps: "10" },
+          { name: "Push Press", reps: "10" },
+          { name: "Reverse Lunges", reps: "20" },
+          { name: "Bent over row", reps: "10" },
+          { name: "Air squats", reps: "20" },
+          { name: "Toques ao lado", reps: "30" }
+        ]
+      }
+    },
+    {
+      type: "Rounds",
+      name: { en: "Triple Threat Rounds", pt: "Voltas Tripla Ameaça" },
+      needsTimer: false,
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "25-20-15-10-5" },
+          { name: "Floor Press", reps: "25-20-15-10-5" },
+          { name: "Reverse Lunges", reps: "25-20-15-10-5" }
+        ],
+        pt: [
+          { name: "Air squats", reps: "25-20-15-10-5" },
+          { name: "Floor Press", reps: "25-20-15-10-5" },
+          { name: "Reverse Lunges", reps: "25-20-15-10-5" }
+        ]
+      }
+    },
+    {
+      type: "Tabata",
+      name: { en: "Full Body Tabata", pt: "Tabata Corpo Inteiro" },
+      needsTimer: true,
+      duration: "8 min",
+      tabataCount: 2,
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "", tabataGroup: 1 },
+          { name: "Modified burpees", reps: "", tabataGroup: 1 },
+          { name: "Side taps", reps: "", tabataGroup: 2 },
+          { name: "Glute bridge", reps: "", tabataGroup: 2 }
+        ],
+        pt: [
+          { name: "Air squats", reps: "", tabataGroup: 1 },
+          { name: "Burpees adaptados", reps: "", tabataGroup: 1 },
+          { name: "Toques ao lado", reps: "", tabataGroup: 2 },
+          { name: "Ponte de Glúteos", reps: "", tabataGroup: 2 }
+        ]
+      }
+    },
+    {
+      type: "AMRAP",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Marathon Session", pt: "Sessão Maratona" },
+      exercises: {
+        en: [
+          { name: "Air squats", reps: "25" },
+          { name: "Thruster", reps: "15" },
+          { name: "Reverse Lunges", reps: "20" },
+          { name: "Bent over row", reps: "15" },
+          { name: "Side taps", reps: "40" },
+          { name: "Glute bridge", reps: "25" }
+        ],
+        pt: [
+          { name: "Air squats", reps: "25" },
+          { name: "Thruster", reps: "15" },
+          { name: "Reverse Lunges", reps: "20" },
+          { name: "Bent over row", reps: "15" },
+          { name: "Toques ao lado", reps: "40" },
+          { name: "Ponte de Glúteos", reps: "25" }
+        ]
+      }
+    },
+    {
+      type: "EMOM",
+      duration: "12 min",
+      needsTimer: true,
+      name: { en: "Ultimate EMOM", pt: "EMOM Ultimate" },
+      exercises: {
+        en: [
+          { name: "Deadlift", reps: "" },
+          { name: "Push Press", reps: "" },
+          { name: "Air squats", reps: "" },
+          { name: "Bent over row", reps: "" }
+        ],
+        pt: [
+          { name: "Deadlift", reps: "" },
+          { name: "Push Press", reps: "" },
+          { name: "Air squats", reps: "" },
+          { name: "Bent over row", reps: "" }
+        ]
+      }
+    },
+    {
+      type: "Intervals",
+      name: { en: "Final Countdown", pt: "Contagem Final" },
+      needsTimer: true,
+      duration: "12 min",
+      exercises: {
+        en: [
+          { name: "Thruster", reps: "50s work / 10s rest" },
+          { name: "Air squats", reps: "50s work / 10s rest" },
+          { name: "Snatch", reps: "50s work / 10s rest" },
+          { name: "Side taps", reps: "50s work / 10s rest" }
+        ],
+        pt: [
+          { name: "Thruster", reps: "50s trabalho / 10s descanso" },
+          { name: "Air squats", reps: "50s trabalho / 10s descanso" },
+          { name: "Snatch", reps: "50s trabalho / 10s descanso" },
+          { name: "Toques ao lado", reps: "50s trabalho / 10s descanso" }
+        ]
+      }
+    }
+  ];
+
+  const getRandomWorkout = () => {
+    const randomIndex = Math.floor(Math.random() * workouts.length);
+    setCurrentWorkout(workouts[randomIndex]);
+    setTimerRunning(false);
+    setTimerPaused(false);
+    setTimerCompleted(false);
+    setTimeRemaining(0);
+    setTabataPhase('work');
+    setTabataRound(1);
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'pt' : 'en';
+    setLanguage(newLang);
+    window.history.pushState({}, '', `/${newLang}`);
+  };
+
+  const startTimer = () => {
+    if (currentWorkout?.type === 'Tabata') {
+      if (timeRemaining === 0) {
+        setTimeRemaining(20);
+        setTabataPhase('work');
+        setTabataRound(1);
+      }
+    } else if (currentWorkout?.duration) {
+      if (timeRemaining === 0) {
+        const durationStr = currentWorkout.duration;
+        if (durationStr.includes('sec')) {
+          const seconds = parseInt(durationStr);
+          setTimeRemaining(seconds);
+        } else {
+          const minutes = parseInt(durationStr);
+          setTimeRemaining(minutes * 60);
+        }
+      }
+    }
+    setTimerRunning(true);
+    setTimerPaused(false);
+    setTimerCompleted(false);
+  };
+
+  const pauseTimer = () => {
+    setTimerRunning(false);
+    setTimerPaused(true);
+  };
+
+  const resetTimer = () => {
+    setTimerRunning(false);
+    setTimerPaused(false);
+    setTimerCompleted(false);
+    setTimeRemaining(0);
+    setTabataPhase('work');
+    setTabataRound(1);
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const isWeighted = (exerciseName) => {
+    return weightedExercises.some(we => exerciseName.includes(we));
+  };
+
+  const t = translations[language];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 p-4 sm:p-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Heart className="text-pink-500 w-8 h-8" />
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">
+              {t.title}
+            </h1>
+          </div>
+          <p className="text-gray-600 text-sm sm:text-base mb-4">
+            {t.subtitle}
+          </p>
+          <button
+            onClick={toggleLanguage}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow text-sm text-gray-700"
+          >
+            <Globe className="w-4 h-4" />
+            {language === 'en' ? 'Português' : 'English'}
+          </button>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 mb-6">
+          {!currentWorkout ? (
+            <div className="text-center py-12">
+              <Dumbbell className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+              <p className="text-gray-600 mb-6">
+                {t.clickForWorkout}
+              </p>
+              <button
+                onClick={getRandomWorkout}
+                className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-md"
+              >
+                {t.generate}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-2xl font-bold text-purple-600">
+                      {currentWorkout.type}
+                    </h2>
+                    <button
+                      onClick={() => setShowTypeHelp(true)}
+                      className="text-purple-400 hover:text-purple-600 transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                  </div>
+                  {currentWorkout.duration && (
+                    <div className="flex items-center gap-2 bg-purple-100 px-4 py-2 rounded-full">
+                      <Clock className="w-5 h-5 text-purple-600" />
+                      <span className="text-xl font-bold text-purple-600">{currentWorkout.duration}</span>
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {currentWorkout.name[language]}
+                </h3>
+              </div>
+
+              {currentWorkout.needsTimer && (
+                <div className="mb-6 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-6">
+                  {currentWorkout.type === 'Tabata' ? (
+                    <div className="text-center">
+                      {timerCompleted ? (
+                        <>
+                          <div className="text-5xl font-bold mb-3 text-green-600">
+                            🎉 {t.wellDone} 🎉
+                          </div>
+                          <p className="text-lg text-gray-700 mb-6">
+                            {t.congratulations}
+                          </p>
+                          <button
+                            onClick={startTimer}
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all flex items-center justify-center gap-2 shadow-md mx-auto"
+                          >
+                            <RefreshCw className="w-5 h-5" />
+                            {t.tryAgain}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className={`text-6xl font-bold mb-2 ${tabataPhase === 'work' ? 'text-green-600' : 'text-orange-600'}`}>
+                            {timeRemaining === 0 && !timerRunning ? '4:00' : (tabataPhase === 'work' ? t.go : t.rest)}
+                          </div>
+                          {timeRemaining > 0 && (
+                            <>
+                              <div className="text-4xl font-bold text-gray-800 mb-2">
+                                {timeRemaining}
+                              </div>
+                              <div className="text-sm text-gray-600 mb-4">
+                                {t.round} {tabataRound}/8
+                              </div>
+                            </>
+                          )}
+                          {timeRemaining === 0 && !timerRunning && (
+                            <div className="mb-4 h-16"></div>
+                          )}
+                          <div className="flex gap-2 justify-center">
+                            {!timerRunning && !timerPaused ? (
+                              <button
+                                onClick={startTimer}
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all flex items-center gap-2 shadow-md"
+                              >
+                                <Play className="w-5 h-5" />
+                                {t.start}
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={timerRunning ? pauseTimer : startTimer}
+                                  className="bg-white px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                                >
+                                  {timerRunning ? (
+                                    <>
+                                      <Pause className="w-4 h-4" />
+                                      {t.pause}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Play className="w-4 h-4" />
+                                      {t.resume}
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={resetTimer}
+                                  className="bg-white px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                  {t.reset}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      {timerCompleted ? (
+                        <>
+                          <div className="text-5xl font-bold mb-3 text-green-600">
+                            🎉 {t.wellDone} 🎉
+                          </div>
+                          <p className="text-lg text-gray-700 mb-6">
+                            {t.congratulations}
+                          </p>
+                          <button
+                            onClick={startTimer}
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all flex items-center justify-center gap-2 shadow-md mx-auto"
+                          >
+                            <RefreshCw className="w-5 h-5" />
+                            {t.tryAgain}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-5xl font-bold text-purple-600 mb-4">
+                            {timeRemaining > 0 ? formatTime(timeRemaining) : (currentWorkout.duration || '0:00')}
+                          </div>
+                          <div className="flex gap-2 justify-center">
+                            {!timerRunning && !timerPaused ? (
+                              <button
+                                onClick={startTimer}
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all flex items-center gap-2 shadow-md"
+                              >
+                                <Play className="w-5 h-5" />
+                                {t.start}
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={timerRunning ? pauseTimer : startTimer}
+                                  className="bg-white px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                                >
+                                  {timerRunning ? (
+                                    <>
+                                      <Pause className="w-4 h-4" />
+                                      {t.pause}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Play className="w-4 h-4" />
+                                      {t.resume}
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={resetTimer}
+                                  className="bg-white px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                  {t.reset}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2 mb-6">
+                {currentWorkout.exercises[language].map((exercise, index) => (
+                  <div key={index}>
+                    {currentWorkout.tabataCount && exercise.tabataGroup && 
+                     (index === 0 || currentWorkout.exercises[language][index - 1].tabataGroup !== exercise.tabataGroup) && (
+                      <div className="text-sm font-bold text-purple-600 mt-4 mb-2">
+                        Tabata {exercise.tabataGroup}
+                      </div>
+                    )}
+                    <div
+                      className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 flex-1">
+                        {exercise.reps && (
+                          <span className="font-semibold text-purple-600 text-lg">{exercise.reps}</span>
+                        )}
+                        <p className="text-gray-700 font-medium">{exercise.name}</p>
+                        {isWeighted(exercise.name) && (
+                          <Dumbbell className="w-5 h-5 text-gray-500" />
+                        )}
+                        <button
+                          onClick={() => setShowExerciseHelp(exercise.name)}
+                          className="text-purple-400 hover:text-purple-600 transition-colors ml-auto"
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={getRandomWorkout}
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-purple-600 transition-all flex items-center justify-center gap-2 shadow-md"
+              >
+                <RefreshCw className="w-5 h-5" />
+                {t.another}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-pink-50 border-l-4 border-pink-400 p-4 rounded-lg">
+          <p className="text-sm text-gray-700">
+            <strong className="text-pink-700">{t.disclaimer}</strong> {t.disclaimerText}
+          </p>
+        </div>
+
+        {showTypeHelp && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-800">{currentWorkout?.type}</h3>
+                <button
+                  onClick={() => setShowTypeHelp(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <p className="text-gray-700 leading-relaxed">
+                {currentWorkout && t.workoutTypes[currentWorkout.type]}
+              </p>
+              <button
+                onClick={() => setShowTypeHelp(false)}
+                className="mt-6 w-full bg-purple-500 text-white py-2 rounded-full hover:bg-purple-600 transition-colors"
+              >
+                {language === 'en' ? 'Close' : 'Fechar'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showExerciseHelp && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-800">{showExerciseHelp}</h3>
+                <button
+                  onClick={() => setShowExerciseHelp(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <p className="text-gray-700 leading-relaxed">
+                {exerciseHelp[language][showExerciseHelp] || (language === 'en' ? 'Exercise description not available.' : 'Descrição do exercício não disponível.')}
+              </p>
+              <button
+                onClick={() => setShowExerciseHelp(null)}
+                className="mt-6 w-full bg-purple-500 text-white py-2 rounded-full hover:bg-purple-600 transition-colors"
+              >
+                {language === 'en' ? 'Close' : 'Fechar'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+    
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<PostpartumWorkout />);
+  </script>
+</body>
+</html>
