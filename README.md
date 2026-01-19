@@ -1,2 +1,2 @@
 # postpartum
-An app for 10 min daily training adapted for post partum.
+An app for 10 min daily workouts adapted for post partum.
