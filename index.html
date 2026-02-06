@@ -4,18 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Postpartum Workout Generator</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    import { useState, useEffect } from 'react';
-import { Dumbbell, RefreshCw, Clock, Heart, HelpCircle, X, Globe, Play, Pause, RotateCcw } from 'lucide-react';
+    const { useState, useEffect } = React;
+    const Dumbbell = ({className}) => <i className={`fa-solid fa-dumbbell ${className}`}></i>;
+    const RefreshCw = ({className}) => <i className={`fa-solid fa-rotate-right ${className}`}></i>;
+    const Clock = ({className}) => <i className={`fa-solid fa-clock ${className}`}></i>;
+    const Heart = ({className}) => <i className={`fa-solid fa-heart ${className}`}></i>;
+    const HelpCircle = ({className}) => <i className={`fa-solid fa-circle-question ${className}`}></i>;
+    const X = ({className}) => <i className={`fa-solid fa-xmark ${className}`}></i>;
+    const Globe = ({className}) => <i className={`fa-solid fa-globe ${className}`}></i>;
+    const Play = ({className}) => <i className={`fa-solid fa-play ${className}`}></i>;
+    const Pause = ({className}) => <i className={`fa-solid fa-pause ${className}`}></i>;
+    const RotateCcw = ({className}) => <i className={`fa-solid fa-arrow-rotate-left ${className}`}></i>;
 
-export default function PostpartumWorkout() {
+function PostpartumWorkout() {
   const [currentWorkout, setCurrentWorkout] = useState(null);
   const [language, setLanguage] = useState('en');
   const [showExerciseHelp, setShowExerciseHelp] = useState(null);
@@ -1615,9 +1625,10 @@ export default function PostpartumWorkout() {
     </div>
   );
 }
-    
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<PostpartumWorkout />);
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<PostpartumWorkout />);
+
   </script>
 </body>
 </html>
